@@ -12,6 +12,11 @@
     <script type="text/javascript">
 
         window.onload = function () {
+            var LEVEL_0 = 'map0'
+            var LEVEL_1 = 'map1'
+            var LEVEL_2 = 'map2'
+            var LEVEL_3 = 'map3'
+            var LEVEL_4 = 'map4'
 
             var DIRECTION_UP = "up";
             var DIRECTION_DOWN = "down";
@@ -21,7 +26,8 @@
             var game = new Phaser.Game(580, 580, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 
             function preload() {
-                game.load.tilemap('map', 'assets/tilemaps/csv/catastrophi_level2.csv?12356', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map0', 'assets/tilemaps/csv/catastrophi_level2.csv?12356', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map1', 'assets/tilemaps/csv/catastrophi_level2.csv?12356', null, Phaser.Tilemap.CSV);
                 game.load.image('tiles', 'assets/tilemaps/tiles/catastrophi_tiles_16.png');
                 game.load.image('sword', 'assets/sprites/sword.png');
                 game.load.image('hero_front','assets/sprites/hero/front.png');
@@ -31,6 +37,7 @@
 
                 game.load.image('amoeba1', 'assets/sprites/amoeba/amoeba1.png');
                 game.load.image('spider', 'assets/sprites/monsters/CatSpider.png');
+                game.load.image('skeleton', 'assets/sprites/monsters/Skeleton.png');
             }
 
             var map;
@@ -40,8 +47,17 @@
             var weapon;
             var debug;
             var fireButton;
+            var runButton;
             var facingDirection;
             var monsters = [];
+
+            var level0 = {
+                mapKey: "map0",
+                monsters: [
+                    {x: 350, y: 250, key: "spider", scale: 3, health: 3 },
+                    {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 }
+                ]
+            }
 
             function initializeHero() {
                 facingDirection = DIRECTION_DOWN;
@@ -55,26 +71,40 @@
 
                 player.health = 3;
                 player.invulnerable = 0;
+                player.body.collideWorldBounds = true;
             }
 
-            function initializeWorld(){
-                map = game.add.tilemap('map', 16, 16);
+            function unload(){
+                monsters.foreach(e=> {
+                    e.kill();
+                })
+            }
+
+            function loadLevel(levelObj){
+                map = game.add.tilemap(levelObj.mapKey, 16, 16);
                 map.addTilesetImage('tiles');
                 layer = map.createLayer(0);
                 layer.scale.set(3.0);
                 layer.resizeWorld();
+
+                levelObj.monsters.forEach(e=> {
+                    monsters.push(initializeMonster(e));
+                })
             }
-            function initializeMonster(x,y, key){
-                var monster =  game.add.sprite(x, y, key);
-                monster.scale.set(2.0)
-                monster.health = 3;
+
+            function initializeMonster(monObj){
+                var monster =  game.add.sprite(monObj.x, monObj.y, monObj.key);
+                monster.scale.set(monObj.scale)
+                monster.health = monObj.health;
                 game.physics.arcade.enable(monster)
                 game.time.events.loop(2000, function() { 
                         game.add.tween(monster).to({x: game.world.randomX, y: game.world.randomY}, 1750, Phaser.Easing.Quadratic.InOut, true);
                     }, 
                     this)
+                monster.body.collideWorldBounds = true;
                 return monster;
             }
+            
             function collisionHandler(monster, bullet){
                 bullet.kill();
                 monster.health -= 1;
@@ -99,14 +129,13 @@
             }
 
             function create() {
-                initializeWorld();
+                loadLevel(level0);
                 debug = game.add.text(16, 16, 'Hello world', { font: '14px Arial', fill: '#ffffff' });
                 debug.fixedToCamera = true;
                 initializeHero();
                 cursors = game.input.keyboard.createCursorKeys();
                 fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
-                monsters.push(initializeMonster(400, 350, 'spider'))
-                monsters.push(initializeMonster(350, 400, 'spider'))
+                runButton = game.input.keyboard.addKey(Phaser.KeyCode.SHIFT);
             }
 
             function update() {
@@ -120,8 +149,23 @@
             function render() {
 
             }
+            var walkSpeed = 200;
+            var runSpeed = 450;
+            var accel = 25;
+            var moveDistance = 200;
             function updateInput(){
-                moveDistance = 200;
+                if(runButton.isDown)
+                {
+                    if(moveDistance < runSpeed) {
+                         moveDistance += 25;
+                    } else moveDistance = runSpeed;
+                }
+                else{
+                    if(moveDistance > walkSpeed) {
+                        moveDistance -= 25;
+                    }
+                    else moveDistance = walkSpeed;
+                }
                 player.body.velocity.setTo(0, 0);
                 if (cursors.up.isDown)
                 {
