@@ -28,7 +28,9 @@
                 game.load.image('hero_left','assets/sprites/hero/left.png');
                 game.load.image('hero_right','assets/sprites/hero/right.png');
                 game.load.image('hero_back','assets/sprites/hero/back.png');
-                game.load
+
+                game.load.image('amoeba1', 'assets/sprites/amoeba/amoeba1.png');
+                game.load.image('spider', 'assets/sprites/monsters/CatSpider.png');
             }
 
             var map;
@@ -39,6 +41,7 @@
             var debug;
             var fireButton;
             var facingDirection;
+            var monsters = [];
 
             function initializeHero() {
                 facingDirection = DIRECTION_DOWN;
@@ -49,6 +52,9 @@
                 weapon.bulletSpeed = 500;
                 weapon.trackSprite(player, 14, 0);
                 game.physics.arcade.enable(player);
+
+                player.health = 3;
+                player.invulnerable = 0;
             }
 
             function initializeWorld(){
@@ -58,6 +64,39 @@
                 layer.scale.set(3.0);
                 layer.resizeWorld();
             }
+            function initializeMonster(x,y, key){
+                var monster =  game.add.sprite(x, y, key);
+                monster.scale.set(2.0)
+                monster.health = 3;
+                game.physics.arcade.enable(monster)
+                game.time.events.loop(2000, function() { 
+                        game.add.tween(monster).to({x: game.world.randomX, y: game.world.randomY}, 1750, Phaser.Easing.Quadratic.InOut, true);
+                    }, 
+                    this)
+                return monster;
+            }
+            function collisionHandler(monster, bullet){
+                bullet.kill();
+                monster.health -= 1;
+                if(monster.health <= 0){
+                    monster.kill();
+                }
+            }
+
+            function playerHit(by, damage){
+                if(player.invulnerable > 0)
+                {
+                    return;
+                }
+                player.health -= 1;
+                if(player.health <= 0){
+                    player.kill();
+                    initializeHero();
+                }
+                else {
+                    player.invulnerable = 60;
+                }
+            }
 
             function create() {
                 initializeWorld();
@@ -66,29 +105,36 @@
                 initializeHero();
                 cursors = game.input.keyboard.createCursorKeys();
                 fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+                monsters.push(initializeMonster(400, 350, 'spider'))
+                monsters.push(initializeMonster(350, 400, 'spider'))
             }
 
             function update() {
+                player.invulnerable -= 1;
                 updateInput()
-                debug.text = Math.round(player.position.x, 1) + ", " + Math.round(player.position.y, 1) + "    " + facingDirection;
+                game.physics.arcade.overlap(weapon.bullets, monsters, collisionHandler, null, this);
+                game.physics.arcade.overlap(player, monsters, playerHit, null, this);
+                debug.text = player.health;
             }
 
             function render() {
 
             }
             function updateInput(){
-                moveDistance = 4;
+                moveDistance = 200;
+                player.body.velocity.setTo(0, 0);
                 if (cursors.up.isDown)
                 {
-                    if(facingDirection == DIRECTION_UP)
-                        player.position.y -= moveDistance
+                    if(facingDirection == DIRECTION_UP){
+                        player.body.velocity.y -= moveDistance
+                    }
                     facingDirection = DIRECTION_UP;
                     player.loadTexture('hero_back', 0)
                 }
                 else if (cursors.down.isDown)
                 {
                     if(facingDirection == DIRECTION_DOWN){
-                        player.position.y += moveDistance;
+                        player.body.velocity.y += moveDistance;
                     }
                     facingDirection = DIRECTION_DOWN;
                     player.loadTexture('hero_front', 0)
@@ -96,7 +142,7 @@
                 if (cursors.left.isDown)
                 {
                     if(facingDirection == DIRECTION_LEFT){
-                        player.position.x -= moveDistance;
+                        player.body.velocity.x -= moveDistance;
                     }
                     facingDirection = DIRECTION_LEFT
                     player.loadTexture('hero_left', 0)
@@ -104,7 +150,7 @@
                 else if (cursors.right.isDown)
                 {
                     if(facingDirection == DIRECTION_RIGHT){
-                        player.position.x += moveDistance;
+                        player.body.velocity.x += moveDistance;
                     }
                     facingDirection = DIRECTION_RIGHT;
                     player.loadTexture('hero_right', 0)
