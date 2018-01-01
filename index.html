@@ -27,7 +27,7 @@
 
             function preload() {
                 game.load.tilemap('map0', 'assets/tilemaps/csv/catastrophi_level2.csv?12356', null, Phaser.Tilemap.CSV);
-                game.load.tilemap('map1', 'assets/tilemaps/csv/catastrophi_level2.csv?12356', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map1', 'assets/tilemaps/csv/test_level1.csv', null, Phaser.Tilemap.CSV);
                 game.load.image('tiles', 'assets/tilemaps/tiles/catastrophi_tiles_16.png');
                 game.load.image('sword', 'assets/sprites/sword.png');
                 game.load.image('hero_front','assets/sprites/hero/front.png');
@@ -50,18 +50,31 @@
             var runButton;
             var facingDirection;
             var monsters = [];
+            var exits = {};
+            var currentLevel;
+            var levels = [
+                {
+                    mapKey: "map0",
+                    monsters: [
+                        {x: 350, y: 250, key: "spider", scale: 3, health: 3 },
+                        {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 }
+                    ],
+                    exits: { 'top': 1, }
+                },
+                {
+                    mapKey: "map1",
+                    monsters: [
+                        {x: 350, y: 250, key: "spider", scale: 3, health: 3 },
+                        {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 },
+                        {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 },
+                    ],
+                    exits: { 'bottom': 0 }
+                }
+            ]
 
-            var level0 = {
-                mapKey: "map0",
-                monsters: [
-                    {x: 350, y: 250, key: "spider", scale: 3, health: 3 },
-                    {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 }
-                ]
-            }
-
-            function initializeHero() {
+            function loadHero(x, y, health) {
                 facingDirection = DIRECTION_DOWN;
-                player = game.add.sprite(50, 50, 'hero_front')
+                player = game.add.sprite(x, y, 'hero_front')
                 player.scale.setTo(2,2);
                 weapon = game.add.weapon(1, 'sword');
                 weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
@@ -69,18 +82,21 @@
                 weapon.trackSprite(player, 14, 0);
                 game.physics.arcade.enable(player);
 
-                player.health = 3;
+                player.health = health;
                 player.invulnerable = 0;
                 player.body.collideWorldBounds = true;
+                player.anchor.setTo(0.5,0.5);
             }
 
             function unload(){
-                monsters.foreach(e=> {
+                monsters.forEach(e=> {
                     e.kill();
                 })
             }
 
-            function loadLevel(levelObj){
+            function loadLevel(levelIndex){
+                currentLevel = levelIndex;
+                levelObj = levels[currentLevel];
                 map = game.add.tilemap(levelObj.mapKey, 16, 16);
                 map.addTilesetImage('tiles');
                 layer = map.createLayer(0);
@@ -121,7 +137,7 @@
                 player.health -= 1;
                 if(player.health <= 0){
                     player.kill();
-                    initializeHero();
+                    loadHero(100, 100, 3);
                 }
                 else {
                     player.invulnerable = 60;
@@ -129,13 +145,19 @@
             }
 
             function create() {
-                loadLevel(level0);
+                loadLevel(0);
                 debug = game.add.text(16, 16, 'Hello world', { font: '14px Arial', fill: '#ffffff' });
                 debug.fixedToCamera = true;
-                initializeHero();
+                loadHero(100, 100, 3);
                 cursors = game.input.keyboard.createCursorKeys();
                 fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
                 runButton = game.input.keyboard.addKey(Phaser.KeyCode.SHIFT);
+                exits = [
+                    { key: 'top', bounds: new Phaser.Rectangle(50, 0, game.world.width - 100, 50) },
+                    { key: 'bottom', bounds: new Phaser.Rectangle(50, game.world.height - 60, game.world.width - 100, 50) },
+                    { key: 'left', bounds: new Phaser.Rectangle(0, 50, 50, game.world.height - 100) },
+                    { key: 'right', bounds: new Phaser.Rectangle(game.world.width - 50, 50, 50, game.world.height - 100) },
+                ]
             }
 
             function update() {
@@ -143,11 +165,22 @@
                 updateInput()
                 game.physics.arcade.overlap(weapon.bullets, monsters, collisionHandler, null, this);
                 game.physics.arcade.overlap(player, monsters, playerHit, null, this);
+                exits.forEach(e=> {
+                    if(e.bounds.contains(player.position.x, player.position.y)) {
+                        if(levels[currentLevel].exits[e.key]) {
+                            unload();
+                            loadLevel(levels[currentLevel].exits[e.key])
+                            loadHero(50, 50, player.health);
+                        }
+                    }
+                })
                 debug.text = player.health;
             }
 
             function render() {
-
+                exits.forEach(e=> {
+                    game.debug.geom(e.bounds, "#0fffff")
+                });
             }
             var walkSpeed = 200;
             var runSpeed = 450;
