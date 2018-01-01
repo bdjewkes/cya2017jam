@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>hello phaser!</title>
-    <script src="//cdn.jsdelivr.net/phaser/2.5.0/phaser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser-ce/2.9.4/phaser.min.js"></script>
 </head>
 
 <body>
@@ -13,82 +13,125 @@
 
         window.onload = function () {
 
+            var DIRECTION_UP = "up";
+            var DIRECTION_DOWN = "down";
+            var DIRECTION_LEFT = "left";
+            var DIRECTION_RIGHT = "right";
 
-            var game = new Phaser.Game(800, 600, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
+            var game = new Phaser.Game(580, 580, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 
             function preload() {
-
                 game.load.tilemap('map', 'assets/tilemaps/csv/catastrophi_level2.csv?12356', null, Phaser.Tilemap.CSV);
                 game.load.image('tiles', 'assets/tilemaps/tiles/catastrophi_tiles_16.png');
-                game.load.image('player','assets/sprites/hero.png');
+                game.load.image('sword', 'assets/sprites/sword.png');
+                game.load.image('hero_front','assets/sprites/hero/front.png');
+                game.load.image('hero_left','assets/sprites/hero/left.png');
+                game.load.image('hero_right','assets/sprites/hero/right.png');
+                game.load.image('hero_back','assets/sprites/hero/back.png');
+                game.load
             }
 
             var map;
             var layer;
             var cursors;
             var player;
+            var weapon;
             var debug;
+            var fireButton;
+            var facingDirection;
 
-            function createPlayer() {
+            function initializeHero() {
+                facingDirection = DIRECTION_DOWN;
+                player = game.add.sprite(50, 50, 'hero_front')
+                player.scale.setTo(2,2);
+                weapon = game.add.weapon(1, 'sword');
+                weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+                weapon.bulletSpeed = 500;
+                weapon.trackSprite(player, 14, 0);
+                game.physics.arcade.enable(player);
+            }
+
+            function initializeWorld(){
+                map = game.add.tilemap('map', 16, 16);
+                map.addTilesetImage('tiles');
+                layer = map.createLayer(0);
+                layer.scale.set(3.0);
+                layer.resizeWorld();
             }
 
             function create() {
-                //  Because we're loading CSV map data we have to specify the tile size here or we can't render it
-                map = game.add.tilemap('map', 16, 16);
-                //  Now add in the tileset
-                map.addTilesetImage('tiles');
-
-                //  Create our layer
-                layer = map.createLayer(0);
-                layer.scale.set(1.25);
-
-                //  Resize the world
-                layer.resizeWorld();
-
-                //  Allow cursors to scroll around the map
-                cursors = game.input.keyboard.createCursorKeys();
-                player = game.add.sprite(50, 50, 'player')
-                player.scale.setTo(0.1,0.1);
-                game.physics.startSystem(Phaser.Physics.P2JS);
-                game.physics.p2.enable(player);
-
+                initializeWorld();
                 debug = game.add.text(16, 16, 'Hello world', { font: '14px Arial', fill: '#ffffff' });
                 debug.fixedToCamera = true;
+                initializeHero();
+                cursors = game.input.keyboard.createCursorKeys();
+                fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
             }
 
             function update() {
-
-                player.body.setZeroVelocity();
+                updateInput()
+                debug.text = Math.round(player.position.x, 1) + ", " + Math.round(player.position.y, 1) + "    " + facingDirection;
             }
 
             function render() {
 
             }
-
-            function updateDebug(){
-                debug.text = Math.round(player.position.x, 1) + ", " + Math.round(player.position.y, 1);
-            }
-
-            function getInput(){
+            function updateInput(){
+                moveDistance = 4;
                 if (cursors.up.isDown)
                 {
-                    player.body.moveUp(300)
+                    if(facingDirection == DIRECTION_UP)
+                        player.position.y -= moveDistance
+                    facingDirection = DIRECTION_UP;
+                    player.loadTexture('hero_back', 0)
                 }
                 else if (cursors.down.isDown)
                 {
-                    player.body.moveDown(300);
+                    if(facingDirection == DIRECTION_DOWN){
+                        player.position.y += moveDistance;
+                    }
+                    facingDirection = DIRECTION_DOWN;
+                    player.loadTexture('hero_front', 0)
                 }
-            
                 if (cursors.left.isDown)
                 {
-                    player.body.velocity.x = -300;
+                    if(facingDirection == DIRECTION_LEFT){
+                        player.position.x -= moveDistance;
+                    }
+                    facingDirection = DIRECTION_LEFT
+                    player.loadTexture('hero_left', 0)
                 }
                 else if (cursors.right.isDown)
                 {
-                    player.body.moveRight(300);
+                    if(facingDirection == DIRECTION_RIGHT){
+                        player.position.x += moveDistance;
+                    }
+                    facingDirection = DIRECTION_RIGHT;
+                    player.loadTexture('hero_right', 0)
+                }
+            
+                if (fireButton.isDown)
+                {
+                    var offset = getRotationDirection(facingDirection);
+                    weapon.fireAngle = offset;
+                    weapon.bulletAngleOffset = facingDirection == DIRECTION_LEFT || facingDirection == DIRECTION_RIGHT
+                        ? 90
+                        : 270;
+                    sword = weapon.fire();
+                }
+            }
+
+            function getRotationDirection(dir){
+                switch(dir){
+                    case DIRECTION_UP: return 270;
+                    case DIRECTION_LEFT: return 180;
+                    case DIRECTION_DOWN: return 90;
+                    case DIRECTION_RIGHT: return 0; 
+                    default: 0;
                 }
             }
         };
+
 
     </script>
 
