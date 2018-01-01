@@ -133,7 +133,9 @@ class Link extends Phaser.Sprite {
                     key: 'hero_right',
                     controls: true,
                     x:50,
-                    y:50
+                    y:50,
+                    width:35,
+                    height:35
                 });
                 player.position
                 game.add.existing(player);
@@ -225,7 +227,7 @@ class Link extends Phaser.Sprite {
             }
 
             function render() {
-
+                // game.debug.body(player);
             }
             var walkSpeed = 200;
             var runSpeed = 450;
