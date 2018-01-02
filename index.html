@@ -5,80 +5,13 @@
     <meta charset="UTF-8" />
     <title>hello phaser!</title>
     <script src="phaser.min.js"></script>
+    <script src="link.js"></script>
+    <script src="levels.js"></script>
 </head>
 
 <body>
 
     <script type="text/javascript">
-class Link extends Phaser.Sprite {
-    constructor( opts ){
-        super( opts.game, opts.x || 0, opts.y || 0, opts.key || '', opts.frame || '' )
-
-        // Enable player physics
-        this.game.physics.enable( this, Phaser.Physics.ARCADE )
-
-        // Player specifics
-        this.body.collideWorldBounds = opts.hasOwnProperty('collideWorldBounds') ? opts.collideWorldBounds : true
-        this.body.setSize( opts.width || 64, opts.height || 64 )
-        this.health = opts.health || 1
-
-        // Shortcut to current state object
-        this.state = this.game.state.states[this.game.state.current]
-
-        // Set up speed values
-        this.speed = opts.speed || 350
-
-        // Set up controls
-        if( opts.hasOwnProperty('controls') ){
-            this.cursors = this.game.input.keyboard.createCursorKeys()
-        }
-
-        // Set up diagonal movement dampener
-        this.matchDiagonalSpeed =  opts.matchDiagonalSpeed || true
-
-        // Shortcut to inverse of Pythagorean constant
-        // (used to make diagonal speed match straight speed)
-        this.pythInverse = 1 / Math.SQRT2
-    }
-
-    update(){
-        // basic living/dying checks
-        if( !this.alive ) return
-        if( this.health <= 0 ){
-            this.die()
-        }
-
-        // horizontal movement
-        if( this.cursors.left.isDown ){
-            this.body.velocity.x = -1
-        } else if ( this.cursors.right.isDown ){
-            this.body.velocity.x = 1
-        } else {
-            this.body.velocity.x = 0
-        }
-
-        // vertical movement
-        if( this.cursors.up.isDown ){
-            this.body.velocity.y = -1
-        } else if ( this.cursors.down.isDown ){
-            this.body.velocity.y = 1
-        } else {
-            this.body.velocity.y = 0
-        }
-
-        // If the player is moving diagonally, the resultant vector
-        // will have a magnitude greather than the defined speed.
-        // This section makes the magnitude of the player's movement
-        // match the defined speed.
-        let targetSpeed =
-            (this.body.velocity.x != 0 && this.body.velocity.y != 0) ?
-            this.speed * this.pythInverse :
-            this.speed
-
-        this.body.velocity.x *= targetSpeed
-        this.body.velocity.y *= targetSpeed
-    }
-}
         window.onload = function () {
             var LEVEL_0 = 'map0'
             var LEVEL_1 = 'map1'
@@ -91,11 +24,16 @@ class Link extends Phaser.Sprite {
             var DIRECTION_LEFT = "left";
             var DIRECTION_RIGHT = "right";
 
-            var game = new Phaser.Game(580, 580, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
+            var game = new Phaser.Game(600, 600, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 
             function preload() {
-                game.load.tilemap('map0', 'assets/tilemaps/csv/catastrophi_level2.csv?12356', null, Phaser.Tilemap.CSV);
-                game.load.tilemap('map1', 'assets/tilemaps/csv/test_level1.csv', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map0', 'assets/tilemaps/csv/Room0', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map1', 'assets/tilemaps/csv/Room1', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map2', 'assets/tilemaps/csv/Room1.5', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map3', 'assets/tilemaps/csv/Room1.7', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map4', 'assets/tilemaps/csv/Room2', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map5', 'assets/tilemaps/csv/Room3', null, Phaser.Tilemap.CSV);
+                game.load.tilemap('map6', 'assets/tilemaps/csv/Room4', null, Phaser.Tilemap.CSV);
                 game.load.image('tiles', 'assets/tilemaps/tiles/catastrophi_tiles_16.png');
                 game.load.image('sword', 'assets/sprites/sword.png');
                 game.load.image('hero_front','assets/sprites/hero/front.png');
@@ -120,25 +58,7 @@ class Link extends Phaser.Sprite {
             var monsters = [];
             var exits = {};
             var currentLevel;
-            var levels = [
-                {
-                    mapKey: "map0",
-                    monsters: [
-                        {x: 350, y: 250, key: "spider", scale: 3, health: 3 },
-                        {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 }
-                    ],
-                    exits: { 'top': 1, }
-                },
-                {
-                    mapKey: "map1",
-                    monsters: [
-                        {x: 350, y: 250, key: "spider", scale: 3, health: 3 },
-                        {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 },
-                        {x: 250, y: 350, key: "skeleton", scale: 2, health: 3 },
-                    ],
-                    exits: { 'bottom': 0 }
-                }
-            ]
+            var levels = levelsData;
 
             function loadHero(x, y, health) {
                 facingDirection = DIRECTION_DOWN;
@@ -146,12 +66,13 @@ class Link extends Phaser.Sprite {
                     game: game,
                     key: 'hero_right',
                     controls: true,
-                    x:50,
-                    y:50,
+                    x:x,
+                    y:y,
                     width:35,
                     height:35
                 });
-                player.position
+                player.scale.setTo(2, 2)
+                player.anchor.setTo(0.5, 0.5)
                 game.add.existing(player);
 
                 facingDirection = DIRECTION_DOWN;
@@ -179,7 +100,7 @@ class Link extends Phaser.Sprite {
                 map = game.add.tilemap(levelObj.mapKey, 16, 16);
                 map.addTilesetImage('tiles');
                 layer = map.createLayer(0);
-                layer.scale.set(3.0);
+                layer.scale.set(2.5);
                 layer.resizeWorld();
 
                 levelObj.monsters.forEach(e=> {
@@ -216,6 +137,7 @@ class Link extends Phaser.Sprite {
                 player.health -= 1;
                 if(player.health <= 0){
                     player.kill();
+                    loadLevel(0);
                     loadHero(100, 100, 3);
                 }
                 else {
@@ -227,7 +149,7 @@ class Link extends Phaser.Sprite {
                 loadLevel(0);
                 debug = game.add.text(16, 16, 'Hello world', { font: '14px Arial', fill: '#ffffff' });
                 debug.fixedToCamera = true;
-                loadHero(100, 100, 3);
+                loadHero(game.world.width/2, game.world.height - 100, 3);
                 cursors = game.input.keyboard.createCursorKeys();
                 fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
                 runButton = game.input.keyboard.addKey(Phaser.KeyCode.SHIFT);
@@ -249,7 +171,7 @@ class Link extends Phaser.Sprite {
                         if(levels[currentLevel].exits[e.key]) {
                             unload();
                             loadLevel(levels[currentLevel].exits[e.key])
-                            loadHero(50, 50, player.health);
+                            loadHero(game.world.width/2 , game.world.height/2, player.health);
                         }
                     }
                 })
