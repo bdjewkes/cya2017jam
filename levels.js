@@ -58,6 +58,7 @@ var levelsData = [
     },
     {
         "mapKey": "map6",
+        "music": "boss",
         "monsters": [
             {"x": 350, "y": 50, "key": "skeleton", "scale": 6, "health": 10 },
         ],
