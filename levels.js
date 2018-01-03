@@ -21,7 +21,9 @@ var levelsData = [
     },
     {
         "mapKey": "map2",
-        "monsters": [],
+        "monsters": [
+            {"x": 350, "y": 250, "key": "amoeba1", "scale": 3, "health": 3 },
+        ], 
         "exits": { 
             "top": 3,
             "bottom": 1 
@@ -29,7 +31,9 @@ var levelsData = [
     },
     {
         "mapKey": "map3",
-        "monsters": [],
+        "monsters": [
+            {"x": 350, "y": 250, "key": "bear", "scale": 3, "health": 3 },
+        ],
         "exits": { 
             "top": 4,
             "bottom": 2
