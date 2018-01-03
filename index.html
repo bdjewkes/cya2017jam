@@ -44,6 +44,12 @@
                 game.load.image('amoeba1', 'assets/sprites/amoeba/amoeba1.png');
                 game.load.image('spider', 'assets/sprites/monsters/CatSpider.png');
                 game.load.image('skeleton', 'assets/sprites/monsters/Skeleton.png');
+
+                game.load.spritesheet('ghost', 'assets/sprites/monsters/GhostSprite.png', 32, 32, 2);
+
+
+                game.load.audio('main',  'assets/audio/main.m4a')
+                game.load.audio('boss',  'assets/audio/boss.m4a')
             }
 
             var map;
@@ -51,13 +57,13 @@
             var cursors;
             var player;
             var weapon;
-            var debug;
             var fireButton;
             var runButton;
             var facingDirection;
             var monsters = [];
             var exits = {};
             var currentLevel;
+            var music;
             var levels = levelsData;
 
             function loadHero(x, y, health) {
@@ -94,9 +100,23 @@
                 })
             }
 
-            function loadLevel(levelIndex){
+            function loadLevel(levelIndex, previousLevel){
+                unload()
+                if(previousLevel){
+                    if(previousLevel == levels.length - 1){
+                        game.sound.stopAll() 
+                        game.sound.play('main',1,true) 
+
+                    }
+                    else if(levelIndex == levels.length - 1){
+                        game.sound.stopAll() 
+                        game.sound.play('boss',1,true)
+                    }
+                }
+
                 currentLevel = levelIndex;
                 levelObj = levels[currentLevel];
+
                 map = game.add.tilemap(levelObj.mapKey, 16, 16);
                 map.addTilesetImage('tiles');
                 layer = map.createLayer(0);
@@ -106,6 +126,7 @@
                 levelObj.monsters.forEach(e=> {
                     monsters.push(initializeMonster(e));
                 })
+
             }
 
             function initializeMonster(monObj){
@@ -118,6 +139,11 @@
                     }, 
                     this)
                 monster.body.collideWorldBounds = true;
+
+                if(monObj.key == "ghost"){
+                    monster.animations.add('wave');
+                        monster.animations.play('wave', 5, true);
+                }
                 return monster;
             }
             
@@ -137,7 +163,7 @@
                 player.health -= 1;
                 if(player.health <= 0){
                     player.kill();
-                    loadLevel(0);
+                    loadLevel(0, currentLevel);
                     loadHero(game.world.width/2, game.world.height - 100, 3);
                 }
                 else {
@@ -147,8 +173,6 @@
 
             function create() {
                 loadLevel(0);
-                debug = game.add.text(16, 16, 'Hello world', { font: '14px Arial', fill: '#ffffff' });
-                debug.fixedToCamera = true;
                 loadHero(game.world.width/2, game.world.height - 100, 3);
                 cursors = game.input.keyboard.createCursorKeys();
                 fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
@@ -159,6 +183,8 @@
                     { key: 'left', bounds: new Phaser.Rectangle(0, 50, 50, game.world.height - 100) },
                     { key: 'right', bounds: new Phaser.Rectangle(game.world.width - 50, 50, 50, game.world.height - 100) },
                 ]
+                game.sound.play('main', 1, true)
+                
             }
 
             function update() {
@@ -169,20 +195,14 @@
                 exits.forEach(e=> {
                     if(e.bounds.contains(player.position.x, player.position.y)) {
                         if(levels[currentLevel].exits[e.key]) {
-                            unload();
-                            loadLevel(levels[currentLevel].exits[e.key])
+                            loadLevel(levels[currentLevel].exits[e.key], currentLevel)
                             loadHero(game.world.width/2 , game.world.height/2, player.health);
                         }
                     }
                 })
-                debug.text = player.health;
             }
 
             function render() {
-                exits.forEach(e=> {
-               //     game.debug.geom(e.bounds, "#0fffff")
-                });
-                // game.debug.body(player);
             }
             var walkSpeed = 200;
             var runSpeed = 450;
