@@ -36,12 +36,14 @@
                 game.load.tilemap('map6', 'assets/tilemaps/csv/Room4', null, Phaser.Tilemap.CSV);
                 game.load.image('tiles', 'assets/tilemaps/tiles/catastrophi_tiles_16.png');
                 game.load.image('sword', 'assets/sprites/sword.png');
+                game.load.image('heart','assets/sprites/heart.png');
                 game.load.image('hero_front','assets/sprites/hero/front.png');
                 game.load.image('hero_left','assets/sprites/hero/left.png');
                 game.load.image('hero_right','assets/sprites/hero/right.png');
                 game.load.image('hero_back','assets/sprites/hero/back.png');
 
                 game.load.image('amoeba1', 'assets/sprites/amoeba/amoeba1.png');
+                game.load.image('amoeba2', 'assets/sprites/amoeba/amoeba2.png');
                 game.load.image('spider', 'assets/sprites/monsters/CatSpider.png');
                 game.load.image('skeleton', 'assets/sprites/monsters/Skeleton.png');
                 game.load.image('bear', 'assets/sprites/monsters/bear.png');
@@ -65,7 +67,24 @@
             var exits = {};
             var currentLevel;
             var music;
+            var healthDisplay;
             var levels = levelsData;
+
+            function create() {
+                loadLevel(0);
+                loadHero(game.world.width/2, game.world.height - 100, 3);
+
+                cursors = game.input.keyboard.createCursorKeys();
+                fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+                runButton = game.input.keyboard.addKey(Phaser.KeyCode.SHIFT);
+                exits = [
+                    { key: 'top', bounds: new Phaser.Rectangle(50, 0, game.world.width - 100, 50) },
+                    { key: 'bottom', bounds: new Phaser.Rectangle(50, game.world.height - 60, game.world.width - 100, 50) },
+                    { key: 'left', bounds: new Phaser.Rectangle(0, 50, 50, game.world.height - 100) },
+                    { key: 'right', bounds: new Phaser.Rectangle(game.world.width - 50, 50, 50, game.world.height - 100) },
+                ]
+                game.sound.play('main', 1, true)
+            }
 
             function loadHero(x, y, health) {
                 facingDirection = DIRECTION_DOWN;
@@ -164,29 +183,16 @@
                 player.health -= 1;
                 if(player.health <= 0){
                     player.kill();
-                    loadLevel(0, currentLevel);
-                    loadHero(game.world.width/2, game.world.height - 100, 3);
                 }
                 else {
                     player.invulnerable = 60;
                 }
             }
-
-            function create() {
-                loadLevel(0);
+            function restart(){
+                loadLevel(0, currentLevel);
                 loadHero(game.world.width/2, game.world.height - 100, 3);
-                cursors = game.input.keyboard.createCursorKeys();
-                fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
-                runButton = game.input.keyboard.addKey(Phaser.KeyCode.SHIFT);
-                exits = [
-                    { key: 'top', bounds: new Phaser.Rectangle(50, 0, game.world.width - 100, 50) },
-                    { key: 'bottom', bounds: new Phaser.Rectangle(50, game.world.height - 60, game.world.width - 100, 50) },
-                    { key: 'left', bounds: new Phaser.Rectangle(0, 50, 50, game.world.height - 100) },
-                    { key: 'right', bounds: new Phaser.Rectangle(game.world.width - 50, 50, 50, game.world.height - 100) },
-                ]
-                game.sound.play('main', 1, true)
-                
             }
+
 
             function update() {
                 player.invulnerable -= 1;
@@ -196,8 +202,20 @@
                 exits.forEach(e=> {
                     if(e.bounds.contains(player.position.x, player.position.y)) {
                         if(levels[currentLevel].exits[e.key]) {
+                            var width = game.world.width;
+                            var height = game.world.height;
+                            var enterAt;
+                            switch (e.key){
+                                case "top": enterAt = { x: width/2, y: height - 100 }; break;
+                                case "bottom": enterAt = { x: width/2, y: 100 }; break;
+                                case "left": enterAt = { x: width - 100, y: height/2 }; break;
+                                case "right": enterAt = { x: 100, y: height/2 }; break;
+                                default: enterAt = { x: width/2, y: 100}; break;
+                            }
                             loadLevel(levels[currentLevel].exits[e.key], currentLevel)
-                            loadHero(game.world.width/2 , game.world.height/2, player.health);
+                            var hp = player.health;
+                            player.kill()
+                            loadHero(enterAt.x, enterAt.y, hp)
                         }
                     }
                 })

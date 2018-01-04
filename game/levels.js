@@ -42,7 +42,7 @@ var levelsData = [
     {
         "mapKey": "map4",
         "monsters": [
-            {"x": 200, "y": 50, "key": "ameoba1", "scale": 4, "health": 5 },
+            {"x": 200, "y": 50, "key": "amoeba1", "scale": 4, "health": 5 },
         ],
 
         "exits": { 
@@ -64,10 +64,11 @@ var levelsData = [
         "mapKey": "map6",
         "music": "boss",
         "monsters": [
-            {"x": 200, "y": 50, "key": "GhostSprite", "scale": 6, "health": 15 },
+            {"x": 200, "y": 50, "key": "ghost", "scale": 6, "health": 15 },
         ],
         "exits": { 
-            "bottom": 5
+            "bottom": 5,
+            "top": 0
         }
     }
 ]
